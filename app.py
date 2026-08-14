@@ -9,19 +9,22 @@ st.title("⚽ GEM System - Betting AI Manager")
 st.markdown("---")
 
 # 2. เชื่อมต่อ Google Sheets
-conn = st.connection("gsheets", type=GSheetsConnection)
+try:
+    spreadsheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
+    conn = st.connection("gsheets", type=GSheetsConnection)
+except Exception as e:
+    st.error("❌ ไม่พบการตั้งค่า Google Sheets URL ใน Secrets")
+    st.stop()
 
-# ฟังก์ชันดึงข้อมูลล่าสุด
+# ฟังก์ชันดึงข้อมูล
 @st.cache_data(ttl=10)
 def load_data():
-    # ระบุ worksheet และอ่านข้อมูล
-    df = conn.read(worksheet="DATA", ttl="0")
+    df = conn.read(spreadsheet=spreadsheet_url, worksheet="DATA", ttl="0")
     df = df.dropna(how='all')
     return df
 
 try:
     df_raw = load_data()
-    # ทำความสะอาดข้อมูลสำหรับแสดงผล
     df = df_raw.copy()
     df.columns = df.columns.str.strip()
     for col in df.columns:
@@ -30,7 +33,7 @@ except Exception as e:
     st.error(f"เกิดข้อผิดพลาดในการดึงข้อมูลจาก Google Sheets: {e}")
     st.stop()
 
-# สร้าง แท็บ สำหรับแยกสลับหน้าจอ (ค้นหา / บันทึก)
+# สร้าง Tabs
 tab_search, tab_add = st.tabs(["🔍 ค้นหาข้อมูล", "➕ บันทึกข้อมูลใหม่"])
 
 # ==========================================
@@ -50,7 +53,7 @@ with tab_search:
         search_ai_ou = st.text_input("AI O/U", "").strip()
         search_tip_ou = st.selectbox("Tip O/U", ["", "Over", "Under"])
 
-    # การกรองข้อมูล
+    # กรองข้อมูล
     filtered_df = df.copy()
 
     if search_hcap:
@@ -74,7 +77,6 @@ with tab_search:
         st.dataframe(filtered_df[display_cols if display_cols else filtered_df.columns], use_container_width=True, hide_index=True)
     else:
         st.warning("ไม่พบข้อมูลที่ตรงกับเงื่อนไข")
-
 
 # ==========================================
 # TAB 2: บันทึกข้อมูลใหม่ (Add New Data)
@@ -103,7 +105,6 @@ with tab_add:
 
         if submit_btn:
             try:
-                # สร้างข้อมูลแถวใหม่ตามโครงสร้างคอลัมน์เดิม
                 new_row = {
                     'League': league,
                     'Handicap': handicap,
@@ -117,15 +118,14 @@ with tab_add:
                     'Status O/U': status_ou
                 }
                 
-                # นำแถวใหม่ไปรวมกับ Dataframe เดิม
                 new_data = pd.DataFrame([new_row])
                 updated_df = pd.concat([df_raw, new_data], ignore_index=True)
                 
-                # บันทึกกลับไปยัง Google Sheets ใน worksheet 'DATA'
-                conn.update(worksheet="DATA", data=updated_df)
+                # บันทึกข้อมูลโดยระบุ URL ลิงก์ตรง
+                conn.update(spreadsheet=spreadsheet_url, worksheet="DATA", data=updated_df)
                 
-                st.success("🎉 บันทึกข้อมูลใหม่ต่อท้ายแถวใน Google Sheet สำเร็จแล้ว!")
-                st.cache_data.clear()  # เคลียร์แคชเพื่อให้ข้อมูลอัปเดตทันที
+                st.success("🎉 บันทึกข้อมูลใหม่สำเร็จแล้ว!")
+                st.cache_data.clear()
                 
             except Exception as e:
                 st.error(f"เกิดข้อผิดพลาดขณะบันทึกข้อมูล: {e}")
