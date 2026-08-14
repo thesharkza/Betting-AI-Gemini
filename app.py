@@ -16,10 +16,14 @@ except Exception as e:
     st.error("❌ ไม่พบการตั้งค่า Google Sheets URL ใน Secrets")
     st.stop()
 
-# ฟังก์ชันดึงข้อมูล
+# ปรับจาก conn.read(...) สั้นๆ เป็นระบุพารามิเตอร์ให้ชัดเจน:
 @st.cache_data(ttl=10)
 def load_data():
-    df = conn.read(spreadsheet=spreadsheet_url, worksheet="DATA", ttl="0")
+    df = conn.read(
+        spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
+        worksheet="DATA",
+        ttl="0"
+    )
     df = df.dropna(how='all')
     return df
 
