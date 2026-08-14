@@ -12,10 +12,11 @@ st.markdown("---")
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # ฟังก์ชันดึงข้อมูลล่าสุด
-@st.cache_data(ttl=10)  # ดึงข้อมูลใหม่ทุกๆ 10 วินาที
+@st.cache_data(ttl=10)
 def load_data():
+    # ระบุ worksheet และอ่านข้อมูล
     df = conn.read(worksheet="DATA", ttl="0")
-    df = df.dropna(how='all') # ลบแถวที่เป็นว่างทั้งหมด
+    df = df.dropna(how='all')
     return df
 
 try:
