@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import traceback
 from streamlit_gsheets import GSheetsConnection
 
 # 1. ตั้งค่าหน้าเพจ
@@ -80,8 +81,8 @@ try:
     if missing_cols:
         st.warning(f"⚠️ ไม่พบคอลัมน์ต่อไปนี้ในชีต (ระบบเติมค่าว่างให้ชั่วคราว): {', '.join(missing_cols)}")
 except Exception as e:
-    st.error(f"เกิดข้อผิดพลาดในการดึงข้อมูลจาก Google Sheets: {e}")
-    st.stop()
+    st.error(f"เกิดข้อผิดพลาด: {e}")
+    st.code(traceback.format_exc())
 
 # สร้าง Tabs
 tab_search, tab_add = st.tabs(["🔍 ค้นหาข้อมูล", "➕ บันทึกข้อมูลใหม่"])
